@@ -49,7 +49,7 @@ def load_data(dir):
         data_imu = scipy.signal.filtfilt(*filter.filter_list['imu'], data_imu, axis=0)
         data_mic = scipy.signal.filtfilt(*filter.filter_list['heartbeat pure'], data_mic)
 
-        heartbeat = heartbeat_segment.heart_rate_estimation(data_imu[:, 1])
+        # heartbeat = heartbeat_segment.heart_rate_estimation(data_imu[:, 1])
         # HRV = len(heartbeat) / (len(data_imu) / sr_imu) * 60
         # print(HRV)
 
@@ -60,7 +60,7 @@ def load_data(dir):
         #     plt.plot(data_mic[int(segmentation[0, i]):int(segmentation[1, i])])
         # plt.show()
 
-        # visualize(data_imu, data_mic)
+        visualize(data_imu, data_mic)
         break
         
 if __name__ == "__main__":

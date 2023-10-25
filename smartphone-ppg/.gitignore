@@ -1,0 +1,12 @@
+*.apk
+*.class
+bin/
+out/
+.gradle/
+build/
+local.properties
+*.log
+*.iml
+.idea/
+.ideaworkspace.xml
+.externalNativeBuild
