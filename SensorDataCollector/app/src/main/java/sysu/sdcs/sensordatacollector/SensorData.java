@@ -70,9 +70,6 @@ public class SensorData {
     }
     public static String getAccData(){
         String data = "";
-        String size = "";
-        size += accelerometerSensorData.size();
-        Log.i("data length", size);
         for(int i = 0 ; i < accelerometerSensorData.size() ; i++){
             String[] acc = accelerometerSensorData.get(i);
             String one_detail = "" + (i+1) + ","

@@ -1,5 +1,14 @@
 package sysu.sdcs.sensordatacollector;
 
+import com.otaliastudios.cameraview.CameraView;
+import com.otaliastudios.cameraview.controls.Flash;
+import sysu.sdcs.sensordatacollector.constant.GlobalConstants;
+import sysu.sdcs.sensordatacollector.domain.image.PpgFrameProcessor;
+import sysu.sdcs.sensordatacollector.service.MeasurementPhase;
+import sysu.sdcs.sensordatacollector.service.MotionMonitoringService;
+
+import android.content.Intent;
+import android.graphics.ImageFormat;
 import android.media.MediaRecorder;
 import android.os.Environment;
 import android.util.Log;
@@ -17,6 +26,7 @@ import androidx.core.content.ContextCompat;
 //import android.support.v7.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -25,6 +35,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.Executors;
@@ -33,10 +44,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
+    private CameraView camera;
+    private TextView heartRate;
+    private PpgFrameProcessor frameProcessor;
     private MediaRecorder recorder = null;
     private static String directory = null;
     private static final String LOG_TAG = "AudioRecordTest";
-    boolean mStartRecording = true;
+    boolean mStartRecording = false;
 
     private static final int REQ_CODE_PERMISSION_EXTERNAL_STORAGE = 0x1111;
     private static final int REQ_CODE_PERMISSION_SENSOR = 0x2222;
@@ -65,7 +79,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         init();
         btn_control.setOnClickListener(btn_listener);
-
+        initCamera();
+        //initButton();
     }
 
     public void init(){
@@ -85,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
 
         directory = Environment.getExternalStorageDirectory().getAbsolutePath()+ "/SensorData/";
         permissionCheck();
+
     }
     private void onRecord(boolean start) {
         if (start) {
@@ -96,10 +112,11 @@ public class MainActivity extends AppCompatActivity {
     private void startRecording() {
         recorder = new MediaRecorder();
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-        recorder.setOutputFile(directory + file_name + ".wav");
+        recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+        recorder.setOutputFile(directory + "MIC_" + file_name + ".wav");
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-        recorder.setAudioSamplingRate(48000);
+        recorder.setAudioSamplingRate(44100);
+        recorder.setAudioEncodingBitRate(16*44100);
         try {
             recorder.prepare();
         } catch (IOException e) {
@@ -132,18 +149,57 @@ public class MainActivity extends AppCompatActivity {
     public String getCurrentTime(){
         return new SimpleDateFormat("yyyyMMdd_HHmmss_SSS").format(new Date());
     }
-    private View.OnClickListener btn_listener = new View.OnClickListener() {
+    private void initCamera() {
+        camera = findViewById(R.id.view_camera);
+        camera.setVisibility(View.INVISIBLE);
+        camera.setLifecycleOwner(this);
+        camera.setFrameProcessingFormat(ImageFormat.YUV_420_888);
+        heartRate = findViewById(R.id.text_heart_rate);
+    }
+
+    private void startMeasurement() {
+        camera.setFlash(Flash.TORCH);
+        PpgFrameProcessor frameprocessor = new PpgFrameProcessor(new WeakReference<>(heartRate));
+        camera.addFrameProcessor(frameprocessor);
+        motionMonitoring(MeasurementPhase.START);
+    }
+    private void stopMeasurement() {
+        camera.setFlash(Flash.OFF);
+        camera.clearFrameProcessors();
+        heartRate.setText(R.string.label_empty);
+        motionMonitoring(MeasurementPhase.STOP);
+    }
+
+    private void motionMonitoring(MeasurementPhase phase) {
+        Intent intent = new Intent(GlobalConstants.MEASUREMENT_PHASE_CHANGE);
+        intent.putExtra(GlobalConstants.MEASUREMENT_PHASE_CHANGE, phase.name());
+        sendBroadcast(intent);
+    }
+//    private void initButton() {
+//        findViewById(R.id.btn_start_measurement).setOnTouchListener((v, event) -> {
+//            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+//                startMeasurement();
+//                Log.d("action_down", "11");
+//            } else if (event.getAction() == MotionEvent.ACTION_UP) {
+//                stopMeasurement();
+//                Log.d("action_up", "22");
+//            }
+//            return false;
+//        });
+//    }
+        private View.OnClickListener btn_listener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            if(edt_path.getText().toString().equals("") ||
-                    edt_path.getText().toString() == null) {
-                Toast.makeText(MainActivity.this, "path ID 不能为空", Toast.LENGTH_SHORT).show();
-            }
-            else if(btn_control.getText().toString().equals("start")){
-                // file_name = edt_path.getText().toString() + "-" + (UUIDUtil.generateRandomString(4));
-                file_name = edt_path.getText().toString() + "-" + getCurrentTime();
-                onRecord(mStartRecording);
-                mStartRecording = !mStartRecording;
+//            if(edt_path.getText().toString().equals("") ||
+//                    edt_path.getText().toString() == null) {
+//                Toast.makeText(MainActivity.this, "path ID 不能为空", Toast.LENGTH_SHORT).show();
+//            }
+            if(btn_control.getText().toString().equals("start")){
+                startMeasurement();
+
+                //file_name = edt_path.getText().toString() + "-" + getCurrentTime();
+                file_name = getCurrentTime();
+                onRecord(true);
 
                 if(!sensorManager.registerListener(sensorListener, accelerometerSensor, SensorManager.SENSOR_DELAY_FASTEST ))
                     Toast.makeText(MainActivity.this, "加速度传感器不可用", Toast.LENGTH_SHORT).show();
@@ -171,17 +227,18 @@ public class MainActivity extends AppCompatActivity {
 
                 tv_state.setText("传感器数据正在采集中\n" + "当前采集路径为：" + edt_path.getText().toString());
                 btn_control.setText("stop");
-                FileUtil.saveSensorData(file_name + ".csv", SensorData.getFileHead());
+                FileUtil.saveSensorData("IMU_" + file_name + ".csv", SensorData.getFileHead());
                 ScheduledExecutorService service = Executors.newScheduledThreadPool(5);
                 future = service.scheduleAtFixedRate(new DataSaveTask(file_name), 5, 5, TimeUnit.SECONDS);
             }
             else{
-                onRecord(mStartRecording);
-                mStartRecording = !mStartRecording;
+                stopMeasurement();
+
+                onRecord(false);
 
                 future.cancel(true);
                 sensorManager.unregisterListener(sensorListener);
-                if(FileUtil.saveSensorData(file_name + ".csv", SensorData.getAccData())){
+                if(FileUtil.saveSensorData("IMU_" + file_name + ".csv", SensorData.getAccData())){
                     cap_records += file_name + "\n";
                     tv_record.setText(cap_records);
                     tv_state.setText("");
@@ -203,6 +260,7 @@ public class MainActivity extends AppCompatActivity {
             recorder.release();
             recorder = null;
         }
+        camera.destroy();
     }
     //权限申请
     @Override

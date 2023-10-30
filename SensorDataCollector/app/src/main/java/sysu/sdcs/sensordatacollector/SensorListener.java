@@ -43,7 +43,6 @@ public class SensorListener implements SensorEventListener{
                     accelerometerData[1] = ""+event.values[1];
                     accelerometerData[2] = ""+event.values[2];
                     SYNC[1] = 1;
-                    Log.d("capsensordata_a", accelerometerData[1]);
                     break;
                 }
                 case Sensor.TYPE_ORIENTATION:{

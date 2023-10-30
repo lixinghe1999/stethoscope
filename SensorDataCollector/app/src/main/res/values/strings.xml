@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">SensorDataCollector</string>
     <string name="title_activity_main2">Main2Activity</string>
+    <string name="label_default_heart_rate">60</string>
+    <string name="toast_keep_device_still">Keep device still</string>
+    <string name="label_empty" />
+    <string name="btn_fingerprint">push_this_for_measurement</string>
+    <string name="description_image_heart">heart_image</string>
 </resources>
