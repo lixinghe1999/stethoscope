@@ -1,79 +1,64 @@
-import wave
-import json
-# from progressbar import *
+import datetime
 import numpy as np
+import scipy
+import wtdenoise
+import heartbeat_segment
+import ppg_pipeline
+sr_mic = 44100
+sr_imu = 400
+sr_ppg = 25
 
-EPS = 1e-12
+def converter(x):
+    time_str = x.decode("utf-8")
+    time_str = '.'.join(time_str.split('_')[1:]) # remove date
+    x = (datetime.datetime.strptime(time_str, '%H%M%S.%f') - datetime.datetime(1900, 1, 1)).total_seconds()
+    return x
+def drift_parse(t1, t2):
+    t1 = '.'.join(t1.split('_')[2:])[:-4] # remove date
+    t1 = datetime.datetime.strptime(t1, '%H%M%S.%f')
+    t2 = '.'.join(t2.split('_')[2:])[:-4] # remove date
+    t2 = datetime.datetime.strptime(t2, '%H%M%S.%f')
+    return (t2 - t1).total_seconds()
+def revise_timestampe(data, timestamps):
+    unique_timestamps, unique_indices = np.unique(timestamps, return_index=True)
+    # Sort the unique timestamps and their corresponding indices
+    sorted_indices = np.argsort(unique_timestamps)
+    sorted_timestamps = unique_timestamps[sorted_indices]
+    sorted_values = data[unique_indices[sorted_indices]]
+    return sorted_values, sorted_timestamps
+def synchronization(data_imu, data_ppg):
+    data_imu, time_imu = data_imu[:, 0], data_imu[:, -1]
+    data_ppg, time_ppg = data_ppg[:, 0], data_ppg[:, -1]
+    sensor_drift = np.argmin(abs(time_imu[0] - time_ppg))
+    data_ppg = data_ppg[sensor_drift:]; time_ppg = time_ppg[sensor_drift:]
+    real_sr_imu = time_imu.shape[0]/ (time_imu[-1] - time_imu[0]) 
+    real_sr_ppg = time_ppg.shape[0]/ (time_ppg[-1] - time_ppg[0])  
+    print('real sample rate:', real_sr_imu, real_sr_ppg)
 
-# from pynvml import *
+    data_imu, time_imu = revise_timestampe(data_imu, time_imu)
+    f_imu = scipy.interpolate.interp1d(time_imu - time_imu[0], data_imu, axis=0)
+    time_imu = np.arange(0, time_imu[-1] - time_imu[0], 1/sr_imu)
+    data_imu = f_imu(time_imu)
 
-def get_framesLength(fname):
-    with wave.open(fname) as f:
-        params = f.getparams()
-    return params[3]
+    f_ppg = scipy.interpolate.interp1d(time_ppg - time_ppg[0], data_ppg, axis=0)
+    time_ppg = np.arange(0, time_ppg[-1] - time_ppg[0], 1/sr_ppg)
+    data_ppg = f_ppg(time_ppg)
+    return data_imu, data_ppg
+def mic_filter(data_mic, heartbeat_imu):
+    # filter1: use IMU as reference
+    # heartbeat_mic = [int(idx * sr_mic / sr_imu) for idx in heartbeat_imu]
+    # gain = np.zeros_like(data_mic) + 0.2
+    # for i in range(len(heartbeat_mic)):
+    #     gain[heartbeat_mic[i] - 6000:heartbeat_mic[i] + 6000] = 1
+    # data_mic = data_mic * gain
+    # filter2: Wavelet Denoising
+    data_mic = wtdenoise.get_baseline(data_mic)
+    # data_mic = wtdenoise.tsd(data_mic)
 
+    return data_mic 
+def denoise(data_imu, data_mic, data_ppg):
+    heartbeat_imu = heartbeat_segment.heart_rate_estimation(data_imu, plot=False)
+    heartbeat_ppg = ppg_pipeline.pipeline(data_ppg)
+    data_mic = mic_filter(data_mic, heartbeat_imu)
 
-def write_json(my_dict, fname):
-    json_str = json.dumps(my_dict, indent=4)
-    with open(fname, "w") as json_file:
-        json_file.write(json_str)
-
-
-def dict_mean(dict_list):
-    ret_val = {}
-    for k in dict_list[0].keys():
-        ret_val[k] = np.mean([v[k] for v in dict_list])
-    return ret_val
-
-
-def load_json(fname):
-    with open(fname, "r") as f:
-        data = json.load(f)
-        return data
-
-
-def get_sample_rate(fname):
-    with wave.open(fname) as f:
-        params = f.getparams()
-    return params[2]
-
-
-def to_log(input):
-    return np.log10(input + 1e-12)
-
-
-def from_log(input):
-    input = np.clip(input, min=-np.inf, max=5)
-    return 10**input
-
-
-def write_list(list, fname):
-    with open(fname, "w") as f:
-        for word in list:
-            f.write(word)
-            f.write("\n")
-
-
-def read_list(fname):
-    result = []
-    with open(fname, "r") as f:
-        for each in f.readlines():
-            each = each.strip("\n")
-            result.append(each)
-    return result
-
-
-def pow_p_norm(signal):
-    """Compute 2 Norm"""
-    signal = signal.reshape(-1)
-    return np.linalg.norm(signal, ord=2, keepdims=True)**2
-
-
-def energy_unify(estimated, original):
-    target = pow_norm(estimated, original) * original
-    target /= pow_p_norm(original) + EPS
-    return estimated, target
-
-
-def pow_norm(s1, s2):
-    return np.sum(s1 * s2, keepdims=True)
+    return data_mic, heartbeat_imu, heartbeat_ppg

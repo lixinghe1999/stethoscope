@@ -29,4 +29,4 @@ def pipeline(ppg, sr=25):
     peaks = MaximaCalculator(ppg)
     HRV = 60 / (np.mean(np.diff(peaks)) / sr)
     print("PPG:", HRV)
-    return ppg_raw, ppg, peaks
+    return peaks
