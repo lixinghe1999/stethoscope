@@ -1,4 +1,5 @@
-dataset/*
-smartphone_stethoscope/dataset
-smartphone_stethoscope/dataset_scian
-weekly report.pptx
+*.txt
+*.csv
+*.wav
+*.pptx
+dataset/

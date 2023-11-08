@@ -3,7 +3,6 @@ import numpy as np
 import librosa
 import matplotlib.pyplot as plt
 import scipy
-import filter
 from utils import *
 import metrics
 
