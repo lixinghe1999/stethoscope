@@ -195,9 +195,9 @@ public class MainActivity extends AppCompatActivity {
 //                Toast.makeText(MainActivity.this, "path ID 不能为空", Toast.LENGTH_SHORT).show();
 //            }
             if(btn_control.getText().toString().equals("start")){
-                startMeasurement();
+                // startMeasurement();
 
-                //file_name = edt_path.getText().toString() + "-" + getCurrentTime();
+                // file_name = edt_path.getText().toString() + "-" + getCurrentTime();
                 file_name = getCurrentTime();
                 onRecord(true);
 
@@ -232,7 +232,7 @@ public class MainActivity extends AppCompatActivity {
                 future = service.scheduleAtFixedRate(new DataSaveTask(file_name), 5, 5, TimeUnit.SECONDS);
             }
             else{
-                stopMeasurement();
+                // stopMeasurement();
 
                 onRecord(false);
 

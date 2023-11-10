@@ -37,5 +37,5 @@ def heart_rate_estimation(sequence, sr=400, plot=False):
         for i in range(len(peaks_correlation)):
             axs[3].plot(sequence[segmentation[0, i]:segmentation[1, i]])
     HRV = 60 / (np.mean(np.diff(peaks_correlation)) / sr)
-    print("IMU:", HRV)
+    # print("IMU:", HRV)
     return peaks_correlation
