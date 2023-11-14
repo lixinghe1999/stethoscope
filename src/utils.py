@@ -7,11 +7,18 @@ import ppg_pipeline
 sr_mic = 44100
 sr_imu = 400
 sr_ppg = 25
-def get_groundtruth(record, playback):
+def synchronize_playback(record, imu, playback):
+    '''
+    record has left and right offset compared to playback
+    '''
+    assert len(record) > len(playback); print('the record is shorter than playback')
     correlation = np.correlate(record, playback, mode='valid')
     shift = np.argmax(correlation)
     right_pad = len(record) - shift - len(playback)
-    return np.pad(playback, (shift, right_pad))
+    print('shift:', shift, 'right_pad:', right_pad)
+    shift_imu = int(shift * sr_imu / sr_mic)
+    right_pad_imu = int(right_pad * sr_imu / sr_mic)
+    return record[shift: -right_pad], imu[shift_imu: -right_pad_imu]
 def converter(x):
     time_str = x.decode("utf-8")
     time_str = '.'.join(time_str.split('_')[1:]) # remove date
@@ -48,7 +55,7 @@ def synchronization_two(data_imu, data_ppg):
     time_ppg = np.arange(0, time_ppg[-1] - time_ppg[0], 1/sr_ppg)
     data_ppg = f_ppg(time_ppg)
     return data_imu, data_ppg
-def synchronization_one(data_imu, ):
+def IMU_resample(data_imu, ):
     data_imu, time_imu = data_imu[:, 0], data_imu[:, -1]
     real_sr_imu = time_imu.shape[0]/ (time_imu[-1] - time_imu[0]) 
 

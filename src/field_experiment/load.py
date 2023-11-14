@@ -85,4 +85,4 @@ def load_data(dir):
         # break
         
 if __name__ == "__main__":
-    load_data('collect_dataset')
+    load_data('scian')

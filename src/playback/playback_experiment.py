@@ -19,37 +19,37 @@ import time
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dataset', type=str, default='CHSC', required=True, choices=['CHSC', 'PhysioNet', 'Thinklabs'])
-    parser.add_argument('-s', '--choose_set', type=str, default='set_a', required=False)
+    parser.add_argument('-s', '--choose_set', type=str, default='set_a', required=True)
     parser.add_argument('--smartphone', action="store_true")     
     args = parser.parse_args()
 
     source_dataset = '..\public_dataset'
     if args.dataset == 'CHSC':
         assert args.choose_set in ['set_a', 'set_b']
-        audio_files, labels = parser_CHSC(source_dataset, args.choose_set)
+        audio_files, labels, lengths = parser_CHSC(source_dataset, args.choose_set)
     elif args.dataset == 'PhysioNet':
         assert args.choose_set in ['training-a', 'training-b', 'training-c', 'training-d', 'training-e', 'training-f', 'validation']
-        audio_files, labels = parser_PhysioNet(source_dataset, args.choose_set)
+        audio_files, labels, lengths = parser_PhysioNet(source_dataset, args.choose_set)
     elif args.dataset == 'Thinklabs':
         assert args.choose_set in ['wav']
-        audio_files, labels = parse_Thinklabs(source_dataset, args.choose_set)
+        audio_files, labels, lengths = parse_Thinklabs(source_dataset, args.choose_set)
 
     print(args.dataset, args.choose_set, len(audio_files))
 
     if args.smartphone:
-        target_dataset = '..\smartphone'
+        target_dataset = '.\smartphone'
         print('smartphone')
     else:
-        target_dataset = '..\stethoscope'
+        target_dataset = '.\stethoscope'
         print('stethoscope')
 
     os.makedirs(target_dataset, exist_ok=True)
     os.makedirs(os.path.join(target_dataset, args.dataset), exist_ok=True)
     os.makedirs(os.path.join(target_dataset, args.dataset, args.choose_set), exist_ok=True)
 
-    file = open(os.path.join(target_dataset, args.dataset, args.choose_set, 'reference.txt'),'w')
-    for f in audio_files:
-        file.write(f+"\n")
+    file = open(os.path.join(target_dataset, args.dataset, args.choose_set, 'reference.txt'), 'w')
+    for audio, label, length in zip(audio_files, labels, lengths):
+        file.write(audio + ' ' + str(label) + ' ' + str(length) +"\n")
     file.close()
     for i, f in enumerate(audio_files):
         print(f, 'the', i+1, 'th file', 'total', len(audio_files))
