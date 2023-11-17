@@ -2,5 +2,5 @@
 *.csv
 *.wav
 *.pptx
-src/public_dataset
+src/playback/public_dataset
 *.pyc

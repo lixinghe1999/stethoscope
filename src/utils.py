@@ -11,7 +11,13 @@ def synchronize_playback(record, imu, playback):
     '''
     record has left and right offset compared to playback
     '''
-    assert len(record) > len(playback); print('the record is shorter than playback')
+    assert len(record) > len(playback)
+    envelop_record = np.abs(scipy.signal.hilbert(record))
+    envelop_playback = np.abs(scipy.signal.hilbert(playback))
+
+    # abs_record = np.abs(record)
+    # abs_playback = np.abs(playback)
+
     correlation = np.correlate(record, playback, mode='valid')
     shift = np.argmax(correlation)
     right_pad = len(record) - shift - len(playback)
@@ -19,6 +25,7 @@ def synchronize_playback(record, imu, playback):
     shift_imu = int(shift * sr_imu / sr_mic)
     right_pad_imu = int(right_pad * sr_imu / sr_mic)
     return record[shift: -right_pad], imu[shift_imu: -right_pad_imu]
+
 def converter(x):
     time_str = x.decode("utf-8")
     time_str = '.'.join(time_str.split('_')[1:]) # remove date

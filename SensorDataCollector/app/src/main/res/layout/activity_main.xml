@@ -91,17 +91,17 @@
 <!--        android:layout_width="100dp"-->
 <!--        android:layout_height="100dp"-->
 <!--        android:src="@drawable/ic_fingerprint" />-->
-    <com.otaliastudios.cameraview.CameraView
-        android:id="@+id/view_camera"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_marginBottom="10dp"
-        android:keepScreenOn="true"
-        app:layout_constraintBottom_toTopOf="@id/text_heart_rate"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" >
+<!--    <com.otaliastudios.cameraview.CameraView-->
+<!--        android:id="@+id/view_camera"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="100dp"-->
+<!--        android:layout_marginBottom="10dp"-->
+<!--        android:keepScreenOn="true"-->
+<!--        app:layout_constraintBottom_toTopOf="@id/text_heart_rate"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintTop_toTopOf="parent" >-->
 
-    </com.otaliastudios.cameraview.CameraView>
+<!--    </com.otaliastudios.cameraview.CameraView>-->
 
 
 

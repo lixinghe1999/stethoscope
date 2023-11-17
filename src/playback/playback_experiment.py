@@ -5,16 +5,13 @@ Large-scale data collection
 3.1. stethoscope, save playback and recording with timestamps (only for evaluation and measurement)
 3.2. smartphone, save recording with timestamps, synchronize with playback offline, also record the corresponding playback
 '''
-from playback_prepare import parse_Thinklabs, parser_CHSC, parser_PhysioNet
-from measure import measure_smartphone, measure_stethoscope
+from playback_prepare import parse_Thinklabs, parser_CHSC, parser_PhysioNet, parse_CirCor
 import sounddevice as sd
-import soundfile as sf
 import android_controller
 import scipy
 import numpy as np
 import argparse
 import os
-from tqdm import tqdm
 import time
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -23,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument('--smartphone', action="store_true")     
     args = parser.parse_args()
 
-    source_dataset = '..\public_dataset'
+    source_dataset = '.\public_dataset'
     if args.dataset == 'CHSC':
         assert args.choose_set in ['set_a', 'set_b']
         audio_files, labels, lengths = parser_CHSC(source_dataset, args.choose_set)
@@ -52,7 +49,7 @@ if __name__ == "__main__":
         file.write(audio + ' ' + str(label) + ' ' + str(length) +"\n")
     file.close()
     for i, f in enumerate(audio_files):
-        print(f, 'the', i+1, 'th file', 'total', len(audio_files))
+        print(i, f, len(audio_files))
         fs, heartbeat = scipy.io.wavfile.read(f)
         b, a = scipy.signal.butter(4, [25, 800], 'bandpass', fs=fs)
         heartbeat = scipy.signal.filtfilt(b, a, heartbeat)
@@ -66,7 +63,8 @@ if __name__ == "__main__":
             sd.play(heartbeat, fs, blocking=True)
             android_controller.tap(750, 750)
             duration = len(heartbeat)/fs
-            time.sleep(duration // 2) # wait until finishing saving, may do something to accelerate it
+            save_time = max(1, duration//3)
+            time.sleep(save_time) # wait until finishing saving, may do something to accelerate it
         else:
             myrecording = sd.playrec(heartbeat, fs, channels=1, blocking=True)
             fname = f.replace(source_dataset, target_dataset)

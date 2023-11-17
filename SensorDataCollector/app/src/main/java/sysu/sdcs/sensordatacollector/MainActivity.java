@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         init();
         btn_control.setOnClickListener(btn_listener);
-        initCamera();
+        //initCamera();
         //initButton();
     }
 
@@ -149,13 +149,13 @@ public class MainActivity extends AppCompatActivity {
     public String getCurrentTime(){
         return new SimpleDateFormat("yyyyMMdd_HHmmss_SSS").format(new Date());
     }
-    private void initCamera() {
-        camera = findViewById(R.id.view_camera);
-        camera.setVisibility(View.INVISIBLE);
-        camera.setLifecycleOwner(this);
-        camera.setFrameProcessingFormat(ImageFormat.YUV_420_888);
-        heartRate = findViewById(R.id.text_heart_rate);
-    }
+//    private void initCamera() {
+//        camera = findViewById(R.id.view_camera);
+//        camera.setVisibility(View.INVISIBLE);
+//        camera.setLifecycleOwner(this);
+//        camera.setFrameProcessingFormat(ImageFormat.YUV_420_888);
+//        heartRate = findViewById(R.id.text_heart_rate);
+//    }
 
     private void startMeasurement() {
         camera.setFlash(Flash.TORCH);
