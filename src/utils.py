@@ -20,7 +20,7 @@ def synchronize_playback(record, imu, playback):
     correlation = np.correlate(record, playback, mode='valid')
     shift = np.argmax(correlation)
     right_pad = len(record) - shift - len(playback)
-    print('shift:', shift, 'right_pad:', right_pad)
+    # print('shift:', shift, 'right_pad:', right_pad)
     shift_imu = int(shift * sr_imu / sr_mic)
     right_pad_imu = int(right_pad * sr_imu / sr_mic)
     return record[shift: -right_pad], imu[shift_imu: -right_pad_imu]

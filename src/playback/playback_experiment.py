@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--choose_set', type=str, default='set_a', required=True)
     args = parser.parse_args()
 
-    source_dataset = '.\public_dataset'
+    source_dataset = 'public_dataset'
     if args.dataset == 'CHSC':
         assert args.choose_set in ['set_a', 'set_b']
         audio_files, labels, lengths = parser_CHSC(source_dataset, args.choose_set)
@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     print(args.dataset, args.choose_set, len(audio_files))
 
-    target_dataset = '.\smartphone'
+    target_dataset = 'smartphone'
 
 
     os.makedirs(target_dataset, exist_ok=True)

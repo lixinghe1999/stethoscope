@@ -5,6 +5,7 @@ import soundfile as sf
 import matplotlib.pyplot as plt
 import scipy
 import sys
+from tqdm import tqdm
 sys.path.append('../')
 from utils import *
 
@@ -43,16 +44,16 @@ def visual_mic_ref(data_mic1, data_mic2, axs):
     t_mic = np.arange(len(data_mic1)) / sr_mic
     axs[0].plot(t_mic, data_mic1)
     axs[0].plot(t_mic, data_mic2)
-def load_data(dir, save=False):
+def load_data(dir, save=True):
     save_dir = dir + '_processed'
     files = os.listdir(dir)
     files_imu = [f for f in files if f.split('_')[0] == 'IMU']
     files_mic = [f for f in files if f.split('_')[0] == 'MIC']
     references = np.loadtxt(os.path.join(dir, 'reference.txt'), dtype=str)
     import shutil
-    shutil.copyfile(os.path.join(dir, 'reference.txt'), os.path.join(save_dir, 'reference.txt'))
+    shutil.copyfile(os.path.join(dir, 'reference.txt'), os.path.join(save_dir, 'reference.txt'))    
     number_of_files = len(files_imu)
-    for i in range(70, number_of_files):
+    for i in tqdm(range(0, number_of_files)):
         imu = os.path.join(dir, files_imu[i])
         mic = os.path.join(dir, files_mic[i])
         reference = references[i][0]
@@ -63,23 +64,24 @@ def load_data(dir, save=False):
         data_imu = IMU_resample(data_imu)
         data_mic, data_imu = synchronize_playback(data_mic, data_imu, data_reference,)
         
-        if save:
-            sf.write(os.path.join(save_dir, files_mic[i]).replace('wav', 'flac'), data_mic, sr_mic)
-            sf.write(os.path.join(save_dir, files_imu[i]).replace('csv', 'flac'), data_imu, sr_imu)
-
-
         data_imu = scipy.signal.filtfilt(*filter_list['imu'], data_imu, axis=0)
         data_mic = scipy.signal.filtfilt(*filter_list['heartbeat filtered'], data_mic)
         data_reference = scipy.signal.filtfilt(*filter_list['heartbeat filtered'], data_reference)
-        fig, axs = plt.subplots(4, 2)
+        if save:
+            sf.write(os.path.join(save_dir, files_mic[i]).replace('wav', 'flac'), data_mic, sr_mic)
+            sf.write(os.path.join(save_dir, files_imu[i]).replace('csv', 'flac'), data_imu, sr_imu)
+            sf.write(os.path.join(save_dir, files_mic[i]).replace('MIC', 'Steth').replace('wav', 'flac'), data_reference, sr_mic)
 
-        visual_imu(data_imu, axs[0])
-        visual_mic(data_mic, axs[1])
-        visual_mic(data_reference, axs[2])
-        visual_mic_ref(data_mic, data_reference, axs[3])
-        fig.delaxes(axs[3, 1]) 
-        plt.show()
-        break
+       
+        # fig, axs = plt.subplots(4, 2)
+
+        # visual_imu(data_imu, axs[0])
+        # visual_mic(data_mic, axs[1])
+        # visual_mic(data_reference, axs[2])
+        # visual_mic_ref(data_mic, data_reference, axs[3])
+        # fig.delaxes(axs[3, 1]) 
+        # plt.show()
+        # break
         
 if __name__ == "__main__":
     load_data('smartphone/CHSC/set_a')
