@@ -1,7 +1,6 @@
 import datetime
 import numpy as np
 import scipy
-import wtdenoise
 import heartbeat_segment
 import ppg_pipeline
 sr_mic = 44100
@@ -12,8 +11,8 @@ def synchronize_playback(record, imu, playback):
     record has left and right offset compared to playback
     '''
     assert len(record) > len(playback)
-    envelop_record = np.abs(scipy.signal.hilbert(record))
-    envelop_playback = np.abs(scipy.signal.hilbert(playback))
+    # envelop_record = np.abs(scipy.signal.hilbert(record))
+    # envelop_playback = np.abs(scipy.signal.hilbert(playback))
 
     # abs_record = np.abs(record)
     # abs_playback = np.abs(playback)
@@ -72,26 +71,13 @@ def IMU_resample(data_imu, ):
     data_imu = f_imu(time_imu)
    
     return data_imu
-def mic_filter(data_mic, heartbeat_imu):
-    # filter1: use IMU as reference
-    # heartbeat_mic = [int(idx * sr_mic / sr_imu) for idx in heartbeat_imu]
-    # gain = np.zeros_like(data_mic) + 0.2
-    # for i in range(len(heartbeat_mic)):
-    #     gain[heartbeat_mic[i] - 6000:heartbeat_mic[i] + 6000] = 1
-    # data_mic = data_mic * gain
-    # filter2: Wavelet Denoising
-    data_mic = wtdenoise.get_baseline(data_mic)
-    # data_mic = wtdenoise.tsd(data_mic)
 
-    return data_mic 
 def process_experiment(data_imu, data_mic, data_ppg):
     heartbeat_imu = heartbeat_segment.heart_rate_estimation(data_imu, plot=False)
     heartbeat_ppg = ppg_pipeline.pipeline(data_ppg)
-    data_mic = mic_filter(data_mic, heartbeat_imu)
 
     return heartbeat_imu, data_mic, heartbeat_ppg
 def process_playback(data_imu, data_mic,):
     heartbeat_imu = heartbeat_segment.heart_rate_estimation(data_imu, plot=False)
-    data_mic = mic_filter(data_mic, heartbeat_imu)
 
     return heartbeat_imu, data_mic

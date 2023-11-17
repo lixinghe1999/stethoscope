@@ -1,12 +1,12 @@
 import os
 import numpy as np
 import librosa
+import soundfile as sf
 import matplotlib.pyplot as plt
 import scipy
 import sys
 sys.path.append('../')
 from utils import *
-import metrics
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -17,14 +17,13 @@ sr_mic = 44100
 sr_imu = 400
 sr_ppg = 25
 
-def visual_imu(data_imu, heartbeat_imu, axs):
+def visual_imu(data_imu, axs):
     '''
     two axes to show IMU data in waveform and STFT
     '''
     f, t, imu_stft = scipy.signal.stft(data_imu, axis=0, fs=sr_imu, nperseg=128,)
     t_imu = np.arange(len(data_imu)) / sr_imu
     axs[0].plot(t_imu, data_imu)
-    axs[0].plot(np.array(heartbeat_imu)/ sr_imu, data_imu[heartbeat_imu], "x")
     axs[1].pcolormesh(t, f, np.abs(imu_stft))
 
 def visual_mic(data_mic, axs):
@@ -45,34 +44,36 @@ def visual_mic_ref(data_mic1, data_mic2, axs):
     axs[0].plot(t_mic, data_mic1)
     axs[0].plot(t_mic, data_mic2)
 def load_data(dir, save=False):
+    save_dir = dir + '_processed'
     files = os.listdir(dir)
     files_imu = [f for f in files if f.split('_')[0] == 'IMU']
     files_mic = [f for f in files if f.split('_')[0] == 'MIC']
     references = np.loadtxt(os.path.join(dir, 'reference.txt'), dtype=str)
+    import shutil
+    shutil.copyfile(os.path.join(dir, 'reference.txt'), os.path.join(save_dir, 'reference.txt'))
     number_of_files = len(files_imu)
-    for i in range(40, number_of_files):
+    for i in range(70, number_of_files):
         imu = os.path.join(dir, files_imu[i])
         mic = os.path.join(dir, files_mic[i])
         reference = references[i][0]
 
         data_mic, sr = librosa.load(mic, sr=sr_mic)
         data_reference, sr = librosa.load(reference, sr=sr_mic)
-        data_imu = np.loadtxt(imu, delimiter=',', skiprows=1, usecols=(2, 4), converters={4:converter}) # only load Y and timestamp
+        data_imu = np.loadtxt(imu, delimiter=',', skiprows=1, usecols=(0, 1), converters={1:converter}) # only load Y and timestamp
         data_imu = IMU_resample(data_imu)
         data_mic, data_imu = synchronize_playback(data_mic, data_imu, data_reference,)
         
-        print(data_mic.shape, data_reference.shape, data_imu.shape)
         if save:
-            scipy.io.wavfile.write(mic, sr_mic, data_mic)
-            scipy.io.wavfile.write(imu.replace('csv', 'wav'), sr_imu, data_imu)
+            sf.write(os.path.join(save_dir, files_mic[i]).replace('wav', 'flac'), data_mic, sr_mic)
+            sf.write(os.path.join(save_dir, files_imu[i]).replace('csv', 'flac'), data_imu, sr_imu)
+
 
         data_imu = scipy.signal.filtfilt(*filter_list['imu'], data_imu, axis=0)
         data_mic = scipy.signal.filtfilt(*filter_list['heartbeat filtered'], data_mic)
         data_reference = scipy.signal.filtfilt(*filter_list['heartbeat filtered'], data_reference)
         fig, axs = plt.subplots(4, 2)
 
-        heartbeat_imu, data_mic = process_playback(data_imu, data_mic)
-        visual_imu(data_imu, heartbeat_imu, axs[0])
+        visual_imu(data_imu, axs[0])
         visual_mic(data_mic, axs[1])
         visual_mic(data_reference, axs[2])
         visual_mic_ref(data_mic, data_reference, axs[3])

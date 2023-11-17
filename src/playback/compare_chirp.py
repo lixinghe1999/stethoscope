@@ -54,6 +54,5 @@ ax[4].set_ylim([0, 30])
 ax[4].set_title('SNR')
 ax[4].legend()
 
-
 plt.savefig('chirp.png', dpi=300)
 plt.show()

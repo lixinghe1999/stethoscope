@@ -76,7 +76,7 @@ def parser_PhysioNet(parent_dir, choose_set='training-a'):
     '''
     DATASET website: https://physionet.org/content/challenge-2016/1.0.0/
     '''
-    loc = os.path.join(parent_dir, 'PhysioNet', choose_set)
+    loc = os.path.join(parent_dir, 'Cardiology_Challenge_2016', choose_set)
     reference = np.loadtxt(os.path.join(loc, 'REFERENCE.csv'), delimiter=',', dtype=str)
     audio_files = []
     labels = []
@@ -114,6 +114,16 @@ def parse_CirCor(parent_dir, choose_set='training_data'):
     lengths = get_length(audio_files)
     return audio_files, labels, lengths
 
+def parse_ephongram(parent_dir, choose_set='WAV'):
+    '''
+    https://physionet.org/content/ephnogram/1.0.0/
+    '''
+    loc = os.path.join(parent_dir, 'ephnogram', choose_set)
+    audio_files = os.listdir(loc)
+    audio_files = [os.path.join(loc, f) for f in audio_files if f.split('.')[-1] == 'wav']
+    labels = []
+    lengths = get_length(audio_files)
+    return audio_files, labels, lengths
 def get_length(audio_files):
     lengths = []
     for audio_file in audio_files:
@@ -123,18 +133,22 @@ def get_length(audio_files):
 if __name__ == "__main__":
     # measurement_chirp()
     # measurement_heartbeat()
+    for s in ['set_a', 'set_b']:
+        audio_files, labels, length = parser_CHSC('public_dataset', choose_set=s)
+        print('CHSC', s, len(audio_files), sum(length) / 60, "minutes")
 
-    audio_files, labels, length = parser_CHSC('../public_dataset', choose_set='set_a')
-    print(len(audio_files), sum(length) / 60, "minutes")
+    for s in ['training-a', 'training-b', 'training-c', 'training-d', 'training-e', 'training-f', 'validation']:
+        audio_files, labels, length = parser_PhysioNet('public_dataset', choose_set=s)
+        print('PhysioNet', s, len(audio_files), sum(length) / 60, "minutes")
+    
+    audio_files, labels, length = parse_Thinklabs('public_dataset')
+    print('Thinklabs', len(audio_files), sum(length) / 60, "minutes")
 
-    audio_files, labels, length = parser_Cardiology_Challenge_2016('../public_dataset', choose_set='training-a')
-    print(len(audio_files), sum(length) / 60, "minutes")
+    # audio_files, labels, length = parse_CirCor('public_dataset')
+    # print('CirCor', len(audio_files), sum(length)/ 60, "minutes")
 
-    audio_files, labels, length = parse_Thinklabs('../public_dataset')
-    print(len(audio_files), sum(length) / 60, "minutes")
-
-    # audio_files, labels, length = parse_CirCor('../public_dataset')
-    # print(len(audio_files), sum(length))
+    # audio_files, labels, length = parse_ephongram('public_dataset')
+    # print('ephongram', len(audio_files), sum(length)/ 60, "minutes")
 
 
   

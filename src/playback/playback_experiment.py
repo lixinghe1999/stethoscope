@@ -17,7 +17,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dataset', type=str, default='CHSC', required=True, choices=['CHSC', 'PhysioNet', 'Thinklabs'])
     parser.add_argument('-s', '--choose_set', type=str, default='set_a', required=True)
-    parser.add_argument('--smartphone', action="store_true")     
     args = parser.parse_args()
 
     source_dataset = '.\public_dataset'
@@ -33,12 +32,8 @@ if __name__ == "__main__":
 
     print(args.dataset, args.choose_set, len(audio_files))
 
-    if args.smartphone:
-        target_dataset = '.\smartphone'
-        print('smartphone')
-    else:
-        target_dataset = '.\stethoscope'
-        print('stethoscope')
+    target_dataset = '.\smartphone'
+
 
     os.makedirs(target_dataset, exist_ok=True)
     os.makedirs(os.path.join(target_dataset, args.dataset), exist_ok=True)
@@ -54,19 +49,16 @@ if __name__ == "__main__":
         b, a = scipy.signal.butter(4, [25, 800], 'bandpass', fs=fs)
         heartbeat = scipy.signal.filtfilt(b, a, heartbeat)
         heartbeat = (heartbeat - np.mean(heartbeat))/np.max(np.abs(heartbeat))
-        if args.smartphone:
-            # the IP address can change. either wireless or wired connection
-            # use adb connect XXXXX first
-            # android_controller.connect('192.168.137.235:5555') 
-            devices = android_controller.checkConnections()
-            android_controller.tap(750, 750)
-            sd.play(heartbeat, fs, blocking=True)
-            android_controller.tap(750, 750)
-            duration = len(heartbeat)/fs
-            save_time = max(1, duration//3)
-            time.sleep(save_time) # wait until finishing saving, may do something to accelerate it
-        else:
-            myrecording = sd.playrec(heartbeat, fs, channels=1, blocking=True)
-            fname = f.replace(source_dataset, target_dataset)
-            scipy.io.wavfile.write(fname, fs, myrecording)
+
+        # the IP address can change. either wireless or wired connection
+        # use adb connect XXXXX first
+        # android_controller.connect('192.168.137.235:5555') 
+        devices = android_controller.checkConnections()
+        android_controller.tap(750, 750)
+        sd.play(heartbeat, fs, blocking=True)
+        android_controller.tap(750, 750)
+        duration = len(heartbeat)/fs
+        save_time = max(1, duration//2)
+        time.sleep(save_time) # wait until finishing saving, may do something to accelerate it
+
         # break

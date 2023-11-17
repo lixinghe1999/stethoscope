@@ -239,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
                 future.cancel(true);
                 sensorManager.unregisterListener(sensorListener);
                 if(FileUtil.saveSensorData("IMU_" + file_name + ".csv", SensorData.getAccData())){
-                    cap_records += file_name + "\n";
+                    cap_records = file_name + "\n";
                     tv_record.setText(cap_records);
                     tv_state.setText("");
                     Toast.makeText(MainActivity.this, "传感器数据保存成功", Toast.LENGTH_SHORT).show();
