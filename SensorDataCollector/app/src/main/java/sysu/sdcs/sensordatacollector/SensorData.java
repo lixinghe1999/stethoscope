@@ -37,11 +37,6 @@ public class SensorData {
         gyroscopeSensorData.add(gData);
         timestamps.add(captime);
     }
-    public static void addAccData(String[] mData, String[] aData, String[] oData,
-                                     String gData[], String[] sData, String captime){
-        accelerometerSensorData.add(aData);
-        timestamps.add(captime);
-    }
 
     public static String getFileHead(){
 //        return  "frame,mag_x,mag_y,mag_z,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z," +
@@ -76,10 +71,11 @@ public class SensorData {
 //            String one_detail = "" + (i+1) + ","
 //                    + acc[0] + "," + acc[1] + "," + acc[2]
 //                    + "," + timestamps.get(i) + "\n" ;
-             String one_detail = "" + acc[1] + "," + timestamps.get(i) + "\n" ;
+            String one_detail = "" + acc[1] + "," + timestamps.get(i) + "\n" ;
+            //String one_detail = "" + acc[1]  + "\n" ;
             data = data + one_detail;
         }
-//        clear();
+        clear();
         return data;
     }
 

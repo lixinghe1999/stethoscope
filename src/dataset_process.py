@@ -1,5 +1,6 @@
 '''
-convert "EPHNOGRAM: A Simultaneous Electrocardiogram and Phonocardiogram Database" from MAT to audio
+1. convert "EPHNOGRAM: A Simultaneous Electrocardiogram and Phonocardiogram Database" from MAT to audio
+2. split other dataset into 10-seconds or less audio clips
 '''
 import scipy
 import os
@@ -13,10 +14,13 @@ def convert_mat_to_wav(file, output):
         start = i
         end = min(i + length * fs, len(pcg))
         scipy.io.wavfile.write(output + '_' + str(i//(length*fs)) + '.wav', fs, pcg[start:end])
-
-if __name__ == "__main__":
+def convert_ephnogram():
     directory = 'public_dataset/ephnogram/MAT'
     target_directory = 'public_dataset/ephnogram/WAV'
     files = os.listdir(directory)
     for file in tqdm(files):
         convert_mat_to_wav(os.path.join(directory, file), os.path.join(target_directory, file[:-4])) 
+def convert_circor():
+    return 
+if __name__ == "__main__":
+    convert_ephnogram()

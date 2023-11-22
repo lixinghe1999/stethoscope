@@ -38,7 +38,7 @@ def measure_stethoscope(wav='chirp_playback.wav', sr=None):
     return myrecording
 if __name__ == "__main__":
     directory = 'measurement/playback/'
-    play_file = 'Steth1.wav'
+    play_file = 'heartbeat.wav'
     # measure_smartphone(directory + play_file) # 2% volume
     measure_stethoscope(directory + play_file)
 

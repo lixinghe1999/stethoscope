@@ -1,34 +1,37 @@
+import os 
 import librosa
-import os
-import sys
-sys.path.append('../')
-from utils import *
+import numpy as np
 import matplotlib.pyplot as plt
-from deep_learning.metrics import AudioMetrics
-playback_dir = 'measurement/playback/'
-recording_dir = 'measurement/'
-playback_file = 'heartbeat'
-
-reference, sr = librosa.load(playback_dir + playback_file + '.wav', sr=None)
-recordings = os.listdir(recording_dir)
-recordings = [r for r in recordings if r.startswith(playback_file) and r.endswith('.wav')]
-metric = AudioMetrics(sr)
-fig, axs = plt.subplots(len(recordings), 1, figsize=(3, 6))
-
-for i, recording in enumerate(recordings):
-
-    _, device, medium, volume, number = recording[:-4].split('_')
-    recording, _ = librosa.load(recording_dir + recording, sr=sr)
-    if len(recording) > len(reference):
-        correlation = np.correlate(recording, reference, mode='valid')
-        shift = np.argmax(correlation)
-        right_pad = len(recording) - shift - len(reference)
-        recording = recording[shift: -right_pad]
-    cos_sim = np.dot(recording, reference) / (np.linalg.norm(recording) * np.linalg.norm(reference))
-    error = metric.evaluation(recording, reference)
-    print('cos_sim:', cos_sim, 'error:', error)
-    axs[i].plot(reference, label='reference', c='r')
-    axs[i].plot(recording, label='recording', c='b')
-    axs[i].set_title(device + ' ' + medium + ' ' + volume)
-plt.legend()
+from tqdm import tqdm
+def spectrum(data1, data2):
+    ps1 = np.abs(np.fft.fft(data1))
+    ps2 = np.abs(np.fft.fft(data2))
+    ps1 = np.fft.fftshift(ps1)[len(data1)//2:]
+    ps2 = np.fft.fftshift(ps2)[len(data2)//2:]
+    freq = np.fft.fftshift(np.fft.fftfreq(len(data1), 1/4000))[len(data1)//2:]
+    return freq, ps1, ps2
+directory = 'smartphone/PhysioNet/training-b' + '_processed'
+files = os.listdir(directory)
+files = [f for f in files if f.startswith('MIC')]
+fig, ax = plt.subplots(1, 3)
+response = []
+freq_index = np.arange(0, 2000, 10)
+for f in tqdm(files[:]):
+    data, sr = librosa.load(os.path.join(directory, f), sr=4000, mono=False)
+    record = data[0]
+    playback = data[1]
+    freq, ps1, ps2 = spectrum(record, playback)
+    res = ps1 / ps2
+    ax[0].plot(freq, ps1)
+    ax[1].plot(freq, ps2)
+    # ax[0].plot(freq, res)
+    res = np.interp(freq_index, freq, res)
+    response.append(res)
+response = np.stack(response, axis=0)
+response_mean = np.mean(response, axis=0)
+response_std = np.std(response, axis=0)
+plt.plot(freq_index, response_mean)
+plt.fill_between(freq_index, response_mean - response_std, response_mean + response_std, alpha=0.3)
 plt.show()
+
+

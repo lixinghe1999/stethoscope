@@ -34,7 +34,7 @@ public class SensorListener implements SensorEventListener{
                     gyroscopeData[1] = ""+event.values[1];
                     gyroscopeData[2] = ""+event.values[2];
                     SYNC[0] = 1;
-                    Log.d("capsensordata_g", accelerometerData[1]);
+                    // Log.d("capsensordata_g", accelerometerData[1]);
                     break;
                 }
                 case Sensor.TYPE_ACCELEROMETER:{
@@ -51,7 +51,7 @@ public class SensorListener implements SensorEventListener{
                     orientationData[1] = ""+event.values[1];
                     orientationData[2] = ""+event.values[2];
                     SYNC[2] = 1;
-                    Log.d("capsensordata_o", orientationData[1]);
+                    //Log.d("capsensordata_o", orientationData[1]);
                     break;
                 }
                 case Sensor.TYPE_MAGNETIC_FIELD:{
@@ -60,18 +60,18 @@ public class SensorListener implements SensorEventListener{
                     magneticData[1] = ""+event.values[1];
                     magneticData[2] = ""+event.values[2];
                     SYNC[3] = 1;
-                    Log.d("capsensordata_m", magneticData[1]);
+                    //Log.d("capsensordata_m", magneticData[1]);
                     break;
                 }
                 case Sensor.TYPE_STEP_COUNTER:{
                     stepCounterData = ""+event.values[0];
-                    Log.d("capsensordata_s1", stepCounterData);
+                    // Log.d("capsensordata_s1", stepCounterData);
                     SYNC[4] = 1;
                     break;
                 }
                 case Sensor.TYPE_STEP_DETECTOR:{
                     stepDetectorData = ""+event.values[0];
-                    Log.d("capsensordata_s2", stepCounterData);
+                    // Log.d("capsensordata_s2", stepCounterData);
                     SYNC[5] = 1;
                     break;
                 }
@@ -112,7 +112,7 @@ public class SensorListener implements SensorEventListener{
         }
 
         public String getCurrentTime(){
-            return new SimpleDateFormat("yyyyMMdd_HHmmss_SSS").format(new Date());
+            return new SimpleDateFormat("ss_SSS").format(new Date());
         }
 
 }
