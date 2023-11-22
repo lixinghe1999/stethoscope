@@ -1664,7 +1664,7 @@ class Dual_Path_Model(nn.Module):
 
 
 
-class SepformerWrapper(nn.Module):
+class Sepformer(nn.Module):
     """The wrapper for the sepformer model which combines the Encoder, Masknet and the decoder
     https://arxiv.org/abs/2010.13154
 
@@ -1733,7 +1733,7 @@ class SepformerWrapper(nn.Module):
         masknet_norm="ln",
         masknet_useextralinearlayer=False,
         masknet_extraskipconnection=True,
-        masknet_numspks=2,
+        masknet_numspks=1,
         intra_numlayers=8,
         inter_numlayers=8,
         intra_nhead=8,
@@ -1746,7 +1746,7 @@ class SepformerWrapper(nn.Module):
         inter_norm_before=True,
     ):
 
-        super(SepformerWrapper, self).__init__()
+        super(Sepformer, self).__init__()
         self.encoder = Encoder(
             kernel_size=encoder_kernel_size,
             out_channels=encoder_out_nchannels,

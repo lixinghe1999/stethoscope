@@ -79,15 +79,15 @@ def snr(x, s, eps=1e-8, vad=1):
     return -20 * torch.log10(eps + l2norm(s_zm * vad) / (l2norm((x_zm - s_zm)*vad) + eps)).mean()
 def get_loss(est_audio, reference):
     loss = 0
-    loss += sisnr(est_audio, reference) * 1
-    loss += snr(est_audio, reference) * 1
+    loss += sisnr(est_audio, reference) * 0.9
+    loss += snr(est_audio, reference) * 0.1
     loss += MultiResolutionSTFTLoss(est_audio, reference) 
     return loss
 def train(model, sample, optimizer, device='cuda',):
     audio = sample['audio'].to(device); reference = sample['reference'].to(device)
     optimizer.zero_grad()
-    est_audio = model(audio)
-    loss = sisnr(est_audio, reference.squeeze(1))   
+    est_audio = model(audio.unsqueeze(1))
+    loss = sisnr(est_audio.squeeze(1), reference.squeeze(1))   
     loss.backward() 
     optimizer.step()
     return loss.item()
@@ -95,5 +95,6 @@ def train(model, sample, optimizer, device='cuda',):
 def test(model, sample, device='cuda'):
     audio = sample['audio'].to(device); reference = sample['reference'].to(device)
     est_audio = model(audio.unsqueeze(1))
-    loss = - sisnr(est_audio, reference.squeeze(1))
-    return loss.item()
+    loss = - sisnr(est_audio.squeeze(1), reference.squeeze(1))
+    # loss = - sisnr(audio.squeeze(1), reference.squeeze(1))
+    return [loss.item()]

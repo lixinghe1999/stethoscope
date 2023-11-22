@@ -19,7 +19,7 @@ import datetime
 class TasNet(nn.Module):
     def __init__(self, enc_dim=512, feature_dim=128, sr=8000, win=2, layer=8,
                  stack=3,
-                 kernel=3, num_spk=2, causal=False):
+                 kernel=3, num_spk=1, causal=False):
         super(TasNet, self).__init__()
 
         # hyper parameters

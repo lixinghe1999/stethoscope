@@ -6,3 +6,4 @@ src/playback/public_dataset
 *.pyc
 *.zip
 *.flac
+*.pth

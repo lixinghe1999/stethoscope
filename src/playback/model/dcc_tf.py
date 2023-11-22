@@ -452,3 +452,14 @@ class Net(nn.Module):
             return x
         else:
             return x, enc_buf, dec_buf, out_buf
+if __name__ == '__main__':
+    import time
+    model = Net(label_len=41, L=8, enc_dim=256, num_enc_layers=10,
+                dec_dim=128, num_dec_layers=1, dec_chunk_size=100)
+    x = torch.randn(2, 1, 8000)
+    y = torch.zeros(2, 41)
+    y[:, 0] = 1
+    t_start = time.time()
+    for i in range(1, 100):
+        z = model(x, y)
+    print(100/(time.time() - t_start))

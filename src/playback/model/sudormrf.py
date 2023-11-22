@@ -287,7 +287,7 @@ class SuDORMRF(nn.Module):
             padded_x = torch.zeros(
                 list(appropriate_shape[:-1]) +
                 [appropriate_shape[-1] + self.lcm - values_to_pad],
-                dtype=torch.float32)
+                dtype=torch.float32, device=x.device)
             padded_x[..., :x.shape[-1]] = x
             return padded_x
         return x
