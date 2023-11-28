@@ -1,5 +1,4 @@
 import torch
-
 def Spectral_Loss(x_mag, y_mag, vad=1):
     """Calculate forward propagation.
           Args:
@@ -77,24 +76,25 @@ def snr(x, s, eps=1e-8, vad=1):
     x_zm = x - torch.mean(x, dim=-1, keepdim=True)
     s_zm = s - torch.mean(s, dim=-1, keepdim=True)
     return -20 * torch.log10(eps + l2norm(s_zm * vad) / (l2norm((x_zm - s_zm)*vad) + eps)).mean()
+def lsd(x, s, eps=1e-8, vad=1):
+    window = torch.hann_window(256).to(x.device)
+    x_stft = torch.stft(x, 256, 120, 120, window, return_complex=True)
+    x_mag = torch.sqrt(
+        torch.clamp((x_stft.real**2) + (x_stft.imag**2), min=1e-8)
+    )
+    s_stft = torch.stft(s, 256, 120, 120, window, return_complex=True)
+    s_mag = torch.sqrt(
+        torch.clamp((s_stft.real**2) + (s_stft.imag**2), min=1e-8)
+    )
+    lsd = torch.log10(x_mag **2 / ((s_mag + eps) ** 2) + eps) ** 2 * vad
+    lsd = torch.mean(torch.mean(lsd, axis=-1) ** 0.5, axis=-1)
+    return lsd
+
 def get_loss(est_audio, reference):
     loss = 0
     loss += sisnr(est_audio, reference) * 0.9
     loss += snr(est_audio, reference) * 0.1
     loss += MultiResolutionSTFTLoss(est_audio, reference) 
     return loss
-def train(model, sample, optimizer, device='cuda',):
-    audio = sample['audio'].to(device); reference = sample['reference'].to(device)
-    optimizer.zero_grad()
-    est_audio = model(audio.unsqueeze(1))
-    loss = sisnr(est_audio.squeeze(1), reference.squeeze(1))   
-    loss.backward() 
-    optimizer.step()
-    return loss.item()
 
-def test(model, sample, device='cuda'):
-    audio = sample['audio'].to(device); reference = sample['reference'].to(device)
-    est_audio = model(audio.unsqueeze(1))
-    loss = - sisnr(est_audio.squeeze(1), reference.squeeze(1))
-    # loss = - sisnr(audio.squeeze(1), reference.squeeze(1))
-    return [loss.item()]
+
