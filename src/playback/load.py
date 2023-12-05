@@ -50,13 +50,11 @@ def load_data(dir, save=False):
     files_imu = [f for f in files if f.split('_')[0] == 'IMU']
     files_mic = [f for f in files if f.split('_')[0] == 'MIC']
     references = np.loadtxt(os.path.join(dir, 'reference.txt'), dtype=str)
-    f = open(os.path.join(save_dir, 'reference.txt'), 'w')
-    number_of_files = len(files_imu)
-    for i in tqdm(range(0, number_of_files)):
+    length = []
+    for i in tqdm(range(0, len(files_imu))):
         imu = os.path.join(dir, files_imu[i])
         mic = os.path.join(dir, files_mic[i])
-        reference = references[i][0]
-        f.write(files_imu[i].replace('csv', 'flac') + ' ' + files_mic[i].replace('wav', 'flac') + ' ' + references[i][-1] + '\n')
+        reference = references[i]
         data_mic, sr = librosa.load(mic, sr=sr_mic)
         data_reference, sr = librosa.load(reference, sr=sr_mic)
         data_imu = np.loadtxt(imu, delimiter=',', skiprows=1, usecols=(0, 1), converters={1:converter}) # only load Y and timestamp
@@ -68,6 +66,7 @@ def load_data(dir, save=False):
         data_mic /= np.max(np.abs(data_mic))
         data_reference = scipy.signal.filtfilt(*filter_list['heartbeat filtered'], data_reference)
         data_reference /= np.max(np.abs(data_reference))
+        length.append(len(data_reference)/sr_mic)
         if save:
             data = np.stack((data_mic, data_reference), axis=1)
             sf.write(os.path.join(save_dir, files_mic[i]).replace('wav', 'flac'), data, sr_mic)
@@ -81,6 +80,6 @@ def load_data(dir, save=False):
             visual_mic_ref(data_mic, data_reference, axs[3])
             fig.delaxes(axs[3, 1]) 
             plt.show()
-    f.close()  
+    np.savetxt(os.path.join(save_dir, 'reference.txt'), length)
 if __name__ == "__main__":
     load_data('smartphone/CHSC/set_a', save=True)

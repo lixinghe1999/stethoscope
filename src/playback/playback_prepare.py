@@ -6,7 +6,7 @@ import scipy
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import torchaudio
+from tqdm import tqdm
 def plot_spectrogram(title, w, fs, ax):
     ff, tt, Sxx = scipy.signal.spectrogram(w, fs=fs, nperseg=256, nfft=512)
     ax.pcolormesh(tt, ff, Sxx, cmap='gray_r', shading='gouraud')
@@ -35,7 +35,7 @@ def prepare_heartbeat():
     plot_spectrogram('Heartbeat', heartbeat, fs, ax)
     scipy.io.wavfile.write('heartbeat_playback.wav', fs, heartbeat)
     plt.show()
-def parser_CHSC(parent_dir, choose_set='set_a'):
+def parse_CHSC(parent_dir, choose_set='set_a'):
     '''
     DATASET website: 
     1. https://istethoscope.peterjbentley.com/heartchallenge/index.html
@@ -56,7 +56,7 @@ def parser_CHSC(parent_dir, choose_set='set_a'):
         labels.append(label)
     audio_files = [os.path.join(loc, f) for f in audio_files]
     return audio_files, labels
-def parser_Cardiology_Challenge_2016(parent_dir, choose_set='training-a'):
+def parse_Cardiology_Challenge_2016(parent_dir, choose_set='training-a'):
     '''
     Classification of Heart Sound Recordings: The PhysioNet/Computing in Cardiology Challenge 2016
     DATASET website: https://physionet.org/content/challenge-2016/1.0.0/
@@ -70,7 +70,7 @@ def parser_Cardiology_Challenge_2016(parent_dir, choose_set='training-a'):
         audio_files.append(os.path.join(loc, f+'.wav'))
         labels.append(int(label))
     return audio_files, labels
-def parser_PhysioNet(parent_dir, choose_set='training-a'):
+def parse_PhysioNet(parent_dir, choose_set='training-a'):
     '''
     DATASET website: https://physionet.org/content/challenge-2016/1.0.0/
     '''
@@ -116,38 +116,119 @@ def parse_ephongram(parent_dir, choose_set='WAV'):
     audio_files = [os.path.join(loc, f) for f in audio_files if f.split('.')[-1] == 'wav']
     labels = []
     return audio_files, labels
-def get_length(target_dataset, audio_files, labels):
-    lengths = []
-    for audio_file in audio_files:
-        duration = torchaudio.info(audio_file).num_frames / torchaudio.info(audio_file).sample_rate
-        lengths.append(duration)
-    file = open(os.path.join(target_dataset, 'reference.txt'), 'w')
-    for audio, label, length in zip(audio_files, labels, lengths):
-        file.write(audio + ' ' + str(label) + ' ' + str(length) +"\n")
-    file.close()
+
+def parse_radarheart(parent_dir, choose_set='WAV'):
+    '''
+    https://www.nature.com/articles/s41597-020-0390-1
+    '''
+    loc = os.path.join(parent_dir, 'radarheart', choose_set)
+    audio_files = os.listdir(loc)
+    audio_files = [os.path.join(loc, f) for f in audio_files if f.split('.')[-1] == 'wav']
+    labels = []
+    return audio_files, labels
+
+def parse_Respiratory(parent_dir, choose_set='audio_and_txt_files'):
+    '''
+    https://www.kaggle.com/datasets/vbookshelf/respiratory-sound-database/data
+    '''
+    loc = os.path.join(parent_dir, 'Respiratory', choose_set)
+    audio_files = os.listdir(loc)
+    audio_files = [os.path.join(loc, f) for f in audio_files if f.split('.')[-1] == 'wav']
+    labels = []
+    return audio_files, labels
+def parse_lungsound(parent_dir, choose_set='Audio Files'):
+    '''
+    https://data.mendeley.com/datasets/jwyy9np4gv/3
+    '''
+    loc = os.path.join(parent_dir, 'lungsound', choose_set)
+    audio_files = os.listdir(loc)
+    audio_files = [os.path.join(loc, f) for f in audio_files if f.split('.')[-1] == 'wav']
+    labels = []
+    return audio_files, labels
+target_sr = 4000
+import librosa
+import soundfile as sf
+def resample(audio_files, folder):
+    os.makedirs(folder, exist_ok=True)
+    length = []
+    for f in tqdm(audio_files):
+        data, sr = librosa.load(f, sr=target_sr)
+        length.append(len(data)/sr)
+        f_new = os.path.basename(f).split('.')[0] + '.flac'
+        f_new = os.path.join(folder, f_new)
+        sf.write(f_new, data, sr)
+    np.savetxt(os.path.join(folder, 'reference.txt'), length, fmt='%.4f')
 if __name__ == "__main__":
-    # measurement_chirp()
-    # measurement_heartbeat()
-    # for s in ['set_a', 'set_b']:
-    #     audio_files, labels = parser_CHSC('public_dataset', choose_set=s)
-    #     print('CHSC', s, len(audio_files))
-    #     get_length(os.path.join('smartphone', 'CHSC', s), audio_files, labels)
+    compress = True
+    if compress:
+        ori_folder = 'public_dataset'
+        target_folder = 'normalized_dataset'
 
-    for s in ['training-a', 'training-b', 'training-c', 'training-d', 'training-e', 'training-f', 'validation']:
-        audio_files, labels = parser_PhysioNet('public_dataset', choose_set=s)
-        print('PhysioNet', s, len(audio_files))
-        get_length(os.path.join('smartphone', 'PhysioNet', s), audio_files, labels)
+        # audio_files, labels = parse_Respiratory(ori_folder)
+        # resample(audio_files, os.path.join(target_folder, 'Respiratory', 'audio_and_txt_files'))
 
-    
-    # audio_files, labels = parse_Thinklabs('public_dataset')
-    # print('Thinklabs', len(audio_files))
+        # audio_files, labels = parse_lungsound(ori_folder)
+        # resample(audio_files, os.path.join(target_folder, 'lungsound', 'Audio Files'))
 
-    # audio_files, labels = parse_CirCor('public_dataset')
-    # print('CirCor', len(audio_files))
+        # for s in ['set_a', 'set_b']:
+        #     audio_files, labels = parse_CHSC(ori_folder, choose_set=s)
+        #     print('CHSC', s, len(audio_files))
+        #     resample(audio_files, os.path.join(target_folder, 'CHSC', s))
 
-    # audio_files, labels = parse_ephongram('public_dataset')
-    # print('ephongram', len(audio_files))
+        # for s in ['training-a', 'training-b', 'training-c', 'training-d', 'training-e', 'training-f', 'validation']:
+        #     audio_files, labels = parse_PhysioNet('public_dataset', choose_set=s)
+        #     print('PhysioNet', s, len(audio_files)) 
+        #     resample(audio_files, os.path.join(target_folder, 'PhysioNet', s))
+        
+        # audio_files, labels = parse_Thinklabs('public_dataset')
+        # print('Thinklabs', len(audio_files))
+        # resample(audio_files, os.path.join(target_folder, 'Thinklabs', 'wav'))
 
+        # audio_files, labels = parse_CirCor('public_dataset')
+        # print('CirCor', len(audio_files))
+        # resample(audio_files, os.path.join(target_folder, 'CirCor', 'training_data'))
+
+        # audio_files, labels = parse_ephongram('public_dataset')
+        # print('ephongram', len(audio_files))
+        # resample(audio_files, os.path.join(target_folder, 'ephongram', 'WAV'))
+
+        audio_files, labels = parse_radarheart('public_dataset')
+        print('radarheart', len(audio_files))
+        resample(audio_files, os.path.join(target_folder, 'radarheart', 'WAV'))
+    else:
+        ori_folder = 'public_dataset'
+        target_folder = 'smartphone'
+        for s in ['set_a', 'set_b']:
+            audio_files, labels = parse_CHSC(ori_folder, choose_set=s)
+            print('CHSC', s, len(audio_files))
+            os.makedirs(os.path.join(target_folder, 'CHSC'), exist_ok=True)
+            os.makedirs(os.path.join(target_folder, 'CHSC', s), exist_ok=True)
+            np.savetxt(os.path.join(target_folder, 'CHSC', s, 'reference.txt'), audio_files, fmt='%d')
+            
+        # for s in ['training-a', 'training-b', 'training-c', 'training-d', 'training-e', 'training-f', 'validation']:
+        #     audio_files, labels = parse_PhysioNet('public_dataset', choose_set=s)
+        #     print('PhysioNet', s, len(audio_files)) 
+        #     os.makedirs(os.path.join(target_folder, 'PhysioNet'), exist_ok=True)
+        #     os.makedirs(os.path.join(target_folder, 'PhysioNet', s), exist_ok=True)
+        #     np.savetxt(os.path.join(target_folder, 'PhysioNet', s, 'reference.txt'), audio_files, fmt='%d')
+        
+        # audio_files, labels = parse_Thinklabs('public_dataset')
+        # print('Thinklabs', len(audio_files))
+        # os.makedirs(os.path.join(target_folder, 'Thinklabs'), exist_ok=True)
+        # os.makedirs(os.path.join(target_folder, 'Thinklabs', 'wav'), exist_ok=True)
+        # np.savetxt(os.path.join(target_folder, 'Thinklabs', 'wav', 'reference.txt'), audio_files, fmt='%d')
+
+        # audio_files, labels = parse_CirCor('public_dataset')
+        # print('CirCor', len(audio_files))
+        # os.makedirs(os.path.join(target_folder, 'CirCor'), exist_ok=True)
+        # os.makedirs(os.path.join(target_folder, 'CirCor', 'training_data'), exist_ok=True)
+        # np.savetxt(os.path.join(target_folder, 'CirCor', 'training_data', 'reference.txt'), audio_files, fmt='%d')
+
+        # audio_files, labels = parse_ephongram('public_dataset')
+        # print('ephongram', len(audio_files))
+        # os.makedirs(os.path.join(target_folder, 'ephongram'), exist_ok=True)
+        # os.makedirs(os.path.join(target_folder, 'ephongram', 'WAV'), exist_ok=True)
+        # np.savetxt(os.path.join(target_folder, 'ephongram', 'WAV', 'reference.txt'), audio_files, fmt='%d')
     
 
 

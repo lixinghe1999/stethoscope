@@ -6,20 +6,18 @@ import ppg_pipeline
 sr_mic = 4000
 sr_imu = 400
 sr_ppg = 25
-def synchronize_playback(record, imu, playback):
+def synchronize_playback(record, imu, playback, flag=False):
     '''
     record has left and right offset compared to playback
     '''
     assert len(record) > len(playback)
-        
-    # envelop_record = np.abs(scipy.signal.hilbert(record))
-    # envelop_playback = np.abs(scipy.signal.hilbert(playback))
-
-    # abs_record = np.abs(record)
-    # abs_playback = np.abs(playback)
-
-    correlation = np.correlate(record, playback, mode='valid')
-    shift = np.argmax(correlation)
+    envelop_record = np.abs(scipy.signal.hilbert(record))
+    envelop_playback = np.abs(scipy.signal.hilbert(playback))
+    if flag:
+        envelop_record = envelop_record[:1 * sr_mic]
+        envelop_playback = envelop_playback[:1 * sr_mic + len(playback) - len(record)]
+    correlation = np.correlate(envelop_record, envelop_playback, mode='valid')
+    shift = np.argmax(correlation) + 1 * sr_mic
     shift_imu = int(shift * sr_imu / sr_mic)
     imu_length = int(len(playback) * sr_imu / sr_mic)
     return record[shift: shift + len(playback)], imu[shift_imu: shift_imu + imu_length]
