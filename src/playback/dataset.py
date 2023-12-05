@@ -76,20 +76,23 @@ class BaseDataset:
                 continue
             # data, _  = torchaudio.load(file, frame_offset =self.stride * index*self.sample_rate, 
             # num_frames=self.length * self.sample_rate, backend='ffmpeg')
-            data, _  = librosa.load(file, sr=self.sample_rate, offset =self.stride * index, duration=self.length, mono=True)
+            data, _  = librosa.load(file, sr=self.sample_rate, offset =self.stride * index, duration=self.length, mono=False)
+            if data.ndim == 1:
+                data = data.reshape(1, -1)
+
             if data.shape[-1] < (self.sample_rate * self.length):
                 pad_before = np.random.randint((self.sample_rate * self.length) - data.shape[-1])
                 pad_after = (self.sample_rate *self.length) - data.shape[-1] - pad_before
                 # data = torch.nn.functional.pad(data, (pad_before, pad_after, 0, 0 ), 'constant')
-                data = np.pad(data, (pad_before, pad_after), 'constant')
+                data = np.pad(data, ((0, 0), (pad_before, pad_after)), 'constant')
             return data
-class StethDataset:
+class PublicDataset:
     def __init__(self, directory = 'normalized_dataset', dataset='CHSC'):
         heart_datasets = {
             'CHSC': ['set_a', 'set_b'],
             'PhysioNet': ['training-a', 'training-b', 'training-c', 'training-d', 'training-e', 'training-f', 'validation'],
             # 'Thinklabs':['wav'],
-            'CirCor': ['training_data'],
+            # 'CirCor': ['training_data'],
             # 'ephongram': ['WAV']
         }
         lung_datasets = {
@@ -104,6 +107,7 @@ class StethDataset:
                 if os.path.exists(sub_dir) is False:
                     continue
                 files = os.listdir(sub_dir)
+                files.sort()
                 files.remove('reference.txt')
                 audio_files += [os.path.join(sub_dir, f) for f in files]
                 reference = np.loadtxt(os.path.join(sub_dir, 'reference.txt'), dtype=str).tolist()
@@ -119,6 +123,7 @@ class StethDataset:
                 if os.path.exists(sub_dir) is False:
                     continue
                 files = os.listdir(sub_dir)
+                files.sort()
                 files.remove('reference.txt')
                 audio_files += [os.path.join(sub_dir, f) for f in files]
                 reference = np.loadtxt(os.path.join(sub_dir, 'reference.txt'), dtype=str).tolist()
@@ -145,21 +150,18 @@ class StethDataset:
         return {'audio': audio, 'reference': reference}
     
 class PairedDataset:
-    def __init__(self, directory = 'normalized_dataset', dataset='CHSC'):
-        datasets = {
-        }
+    def __init__(self, directory = 'thinklabs_processed'):
         audio_files = []
         length_info = []
-        for dataset in datasets:
-            for choose_set in datasets[dataset]:
-                sub_dir = os.path.join(directory, dataset, choose_set)
-                if os.path.exists(sub_dir) is False:
-                    continue
+        for p in os.listdir(directory):
+            for s in os.listdir(os.path.join(directory, p)):
+                sub_dir = os.path.join(directory, p, s)
                 files = os.listdir(sub_dir)
                 files.remove('reference.txt')
+                files.sort()
                 audio_files += [os.path.join(sub_dir, f) for f in files]
                 reference = np.loadtxt(os.path.join(sub_dir, 'reference.txt'), dtype=str).tolist()
-                length_info += [float(r[-1]) for r in reference]
+                length_info += [float(r) for r in reference]
         self.audio_dataset = BaseDataset(audio_files, length_info, sample_rate=4000, length=3, stride=2)
         print('paired dataset size:', len(self.audio_dataset))
 
@@ -175,5 +177,7 @@ class PairedDataset:
         mic *= snr_scalar
         return {'audio': mic, 'reference': steth}
 if __name__ == "__main__":
-    dataset = StethDataset()
+    dataset = PublicDataset()
+    print(len(dataset))
+    dataset = PairedDataset()
     print(len(dataset))

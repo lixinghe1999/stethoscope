@@ -3,7 +3,7 @@ from tqdm import tqdm
 from .loss import sisnr
 from .forward import Forward_Model
 import itertools
-class Forward_Reverse:
+class Forward_Reverse(torch.nn.Module):
     def __init__(self, model, LR=0.0001):
         super(Forward_Reverse, self).__init__() 
         self.forward_model = Forward_Model()
@@ -37,7 +37,7 @@ class Forward_Reverse:
         return loss_forward, loss_reverse
     def run_epoch_test(self, test_loader, device):
         loss_list = []
-        for sample in tqdm(test_loader):
+        for sample in (test_loader):
             z = sample['audio'].to(device).unsqueeze(1); x = sample['reference'].to(device).unsqueeze(1)
             est_reference = self.Reverse(z)
             loss = - sisnr(est_reference.squeeze(1), x.squeeze(1))

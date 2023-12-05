@@ -78,18 +78,19 @@ def snr(x, s, eps=1e-8, vad=1):
     return -20 * torch.log10(eps + l2norm(s_zm * vad) / (l2norm((x_zm - s_zm)*vad) + eps)).mean()
 def lsd(x, s, eps=1e-8, vad=1):
     window = torch.hann_window(256).to(x.device)
-    x_stft = torch.stft(x, 256, 120, 120, window, return_complex=True)
+    x_stft = torch.stft(x, 256, 120, 256, window, return_complex=True)
     x_mag = torch.sqrt(
         torch.clamp((x_stft.real**2) + (x_stft.imag**2), min=1e-8)
     )
-    s_stft = torch.stft(s, 256, 120, 120, window, return_complex=True)
+    s_stft = torch.stft(s, 256, 120, 256, window, return_complex=True)
     s_mag = torch.sqrt(
         torch.clamp((s_stft.real**2) + (s_stft.imag**2), min=1e-8)
     )
     lsd = torch.log10(x_mag **2 / ((s_mag + eps) ** 2) + eps) ** 2 * vad
-    lsd = torch.mean(torch.mean(lsd, axis=-1) ** 0.5, axis=-1)
+    lsd = torch.mean(torch.mean(torch.mean(lsd, axis=-1) ** 0.5, axis=-1))
     return lsd
-
+def rmse(x, s, eps=1e-8, vad=1):
+    return torch.mean(torch.sqrt(torch.mean(((x - s) * vad) ** 2, axis=-1)))
 def get_loss(est_audio, reference):
     loss = 0
     loss += sisnr(est_audio, reference) * 0.9

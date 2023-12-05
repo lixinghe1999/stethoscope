@@ -1,5 +1,5 @@
 import torch
-from dataset import StethDataset
+from dataset import PublicDataset, PairedDataset
 # import metrics
 import model
 import numpy as np
@@ -12,14 +12,16 @@ def inference(dataset, BATCH_SIZE, model):
     model.eval()
     with torch.no_grad():
         Metric = model.run_epoch_test(test_loader, device)
-    avg_metric = np.round(np.mean(np.concatenate(Metric, axis=0), axis=0),2).tolist()
+    avg_metric = np.round(np.mean(np.array(Metric), axis=0),3).tolist()
     print(avg_metric)
     return avg_metric
 
 def train(dataset, EPOCH, lr, BATCH_SIZE, model,):
-    train_dataset, test_dataset = dataset
+    [large_dataset, train_dataset], test_dataset = dataset
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=16, batch_size=BATCH_SIZE, shuffle=True,
+    large_loader = torch.utils.data.DataLoader(dataset=large_dataset, num_workers=8, batch_size=BATCH_SIZE, shuffle=True,
+                                               drop_last=True, pin_memory=False)
+    small_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=8, batch_size=BATCH_SIZE, shuffle=True,
                                                drop_last=True, pin_memory=False)
     save_dir = 'checkpoints/' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '/'
     os.mkdir(save_dir)
@@ -29,7 +31,7 @@ def train(dataset, EPOCH, lr, BATCH_SIZE, model,):
         print('first test the initial checkpoint')
         avg_metric = inference(test_dataset, BATCH_SIZE, model)
     for e in range(EPOCH):
-        Loss_list = model.run_epoch_train(train_loader, device)
+        Loss_list = model.run_epoch_train(small_loader, large_loader, device)
         mean_lost = np.mean(Loss_list)
         avg_metric = inference(test_dataset, BATCH_SIZE, model)
         if e % 10 == 0:
@@ -45,7 +47,7 @@ def train(dataset, EPOCH, lr, BATCH_SIZE, model,):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--train', action="store_true", default=False, required=False)
-    parser.add_argument('--task', action="store", type=str, default='CycleGAN', required=False)
+    parser.add_argument('--task', action="store", type=str, default='Reverse', required=False)
     parser.add_argument('--model', action="store", type=str, default='SuDORMRF', required=False,
      help='choose the model', choices=['SuDORMRF', 'TasNet', 'Sepformer'])
 
@@ -53,20 +55,20 @@ if __name__ == "__main__":
     device = (torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
 
     model = getattr(model, args.task)(getattr(model, args.model)).to(device)
-    # model = torch.nn.DataParallel(model, device_ids=[0, 1])
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     lr = 0.0001
     EPOCH = 50
     checkpoint = None
 
-    dataset = StethDataset()
+    large_dataset = PublicDataset()
+    small_dataset = PairedDataset()
     if checkpoint is not None:
         ckpt = torch.load('checkpoints/' + checkpoint)
         model.load_state_dict(ckpt, strict=True)
-
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [int(len(dataset) * 0.8), len(dataset) - int(len(dataset) * 0.8)])
+    train_dataset, test_dataset = torch.utils.data.random_split(small_dataset, [int(len(small_dataset) * 0.8), 
+                                                                                len(small_dataset) - int(len(small_dataset) * 0.8)])
     if args.train:
-        train([train_dataset, test_dataset], EPOCH, lr, BATCH_SIZE, model)
+        train([[large_dataset, train_dataset], test_dataset], EPOCH, lr, BATCH_SIZE, model)
     else:
         inference(test_dataset, BATCH_SIZE, model)
 
