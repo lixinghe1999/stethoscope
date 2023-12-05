@@ -11,6 +11,8 @@ import android.content.Intent;
 import android.graphics.ImageFormat;
 import android.media.MediaRecorder;
 import android.os.Environment;
+import android.os.Vibrator;
+
 import android.util.Log;
 
 import android.Manifest;
@@ -36,6 +38,9 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.Executors;
@@ -49,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
     private PpgFrameProcessor frameProcessor;
     private MediaRecorder recorder = null;
     private static String directory = null;
+    private static String path_wav = null;
     private static final String LOG_TAG = "AudioRecordTest";
     boolean mStartRecording = false;
 
@@ -72,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
     private ScheduledFuture future;
     private String file_name = "";
     private String cap_records = "";
-
+    private Vibrator vib;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         edt_path = findViewById(R.id.edt_pathID);
         tv_state = findViewById(R.id.state);
         tv_record = findViewById(R.id.record);
+        vib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
         sensorListener = new SensorListener();
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -113,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
         recorder = new MediaRecorder();
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-        recorder.setOutputFile(directory + "MIC_" + file_name + ".wav");
+        recorder.setOutputFile(path_wav + "MIC_" + file_name + ".wav");
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
         recorder.setAudioSamplingRate(44100);
         recorder.setAudioEncodingBitRate(16*44100);
@@ -147,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     public String getCurrentTime(){
-        return new SimpleDateFormat("yyyyMMdd_HHmmss_SSS").format(new Date());
+        return new SimpleDateFormat("HHmmss_SSS").format(new Date());
     }
 //    private void initCamera() {
 //        camera = findViewById(R.id.view_camera);
@@ -190,17 +197,27 @@ public class MainActivity extends AppCompatActivity {
         private View.OnClickListener btn_listener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-//            if(edt_path.getText().toString().equals("") ||
-//                    edt_path.getText().toString() == null) {
-//                Toast.makeText(MainActivity.this, "path ID 不能为空", Toast.LENGTH_SHORT).show();
-//            }
+            if(edt_path.getText().toString().equals("") ||
+                    edt_path.getText().toString() == null) {
+                path_wav = directory;
+                FileUtil.file_path = directory;
+            }
             if(btn_control.getText().toString().equals("start")){
                 // startMeasurement();
 
-                // file_name = edt_path.getText().toString() + "-" + getCurrentTime();
                 file_name = getCurrentTime();
-                onRecord(true);
+                Log.i("fname", file_name);
+                try {
+                    Files.createDirectories(Paths.get(directory + edt_path.getText().toString() + "/"));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                path_wav = directory + edt_path.getText().toString() + "/";
+                FileUtil.file_path = directory + edt_path.getText().toString() + "/";
 
+                onRecord(true);
+                long[] pattern = {0, 200, 200, 200, 200,};
+                vib.vibrate(pattern, -1);
                 if(!sensorManager.registerListener(sensorListener, accelerometerSensor, SensorManager.SENSOR_DELAY_FASTEST ))
                     Toast.makeText(MainActivity.this, "加速度传感器不可用", Toast.LENGTH_SHORT).show();
 
@@ -242,11 +259,12 @@ public class MainActivity extends AppCompatActivity {
                     cap_records = file_name + "\n";
                     tv_record.setText(cap_records);
                     tv_state.setText("");
-                    Toast.makeText(MainActivity.this, "传感器数据保存成功", Toast.LENGTH_SHORT).show();
+
                 }
                 else
                     Toast.makeText(MainActivity.this, "传感器数据保存失败", Toast.LENGTH_SHORT).show();
                 SensorData.clear();
+                Toast.makeText(MainActivity.this, "传感器数据保存成功", Toast.LENGTH_SHORT).show();
                 btn_control.setText("start");
                 tv_state.setText("点击按钮开始采集\n");
             }
