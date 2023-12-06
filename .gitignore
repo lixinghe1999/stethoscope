@@ -7,4 +7,7 @@ src/playback/public_dataset
 *.zip
 *.flac
 *.pth
+*.tgz
+*.tar.gz
 src/field_experiment/textile
+src/deep/dataset
