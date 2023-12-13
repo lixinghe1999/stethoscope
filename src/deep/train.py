@@ -6,14 +6,30 @@ import numpy as np
 import argparse
 import os
 import datetime
-def inference(dataset, BATCH_SIZE, model):
-    test_loader = torch.utils.data.DataLoader(dataset=dataset, num_workers=8, batch_size=BATCH_SIZE, shuffle=False, drop_last=True)
+def fine_grained_inference(model):
+    people = ['Lixing_He',]
+    smartphone = ['PixelXL', 'Pixel6', 'iPhone13', 'EDIFIER', 'SAST']
+    textile = ['skin', 'cotton', 'polyester', 'thickcotton', 'thickpolyester', 'PU', 'cowboy']
+    for p in people:
+        test_dataset = PairedDataset(people=[p], train=False)
+        avg_metric = inference(test_dataset, model)
+        print(p, avg_metric)
+    for s in smartphone:
+        test_dataset = PairedDataset(phone=[s], train=False)
+        avg_metric = inference(test_dataset, model)
+        print(s, avg_metric)
+    for t in textile:
+        test_dataset = PairedDataset(textile=[t], train=False)
+        avg_metric = inference(test_dataset, model)
+        print(t, avg_metric)
+                
+def inference(dataset, model):
+    test_loader = torch.utils.data.DataLoader(dataset=dataset, num_workers=4, batch_size=4, shuffle=False, drop_last=False)
     Metric = []
     model.eval()
     with torch.no_grad():
         Metric = model.run_epoch_test(test_loader, device)
     avg_metric = np.round(np.mean(np.array(Metric), axis=0),3).tolist()
-    print(avg_metric)
     return avg_metric
 
 def train(dataset, EPOCH, lr, BATCH_SIZE, model,):
@@ -29,11 +45,15 @@ def train(dataset, EPOCH, lr, BATCH_SIZE, model,):
     ckpt_best = model.state_dict()
     if checkpoint is not None:
         print('first test the initial checkpoint')
-        avg_metric = inference(test_dataset, BATCH_SIZE, model)
+        avg_metric = inference(test_dataset, model)
+        print(avg_metric)
+
     for e in range(EPOCH):
         Loss_list = model.run_epoch_train(small_loader, large_loader, device)
         mean_lost = np.mean(Loss_list)
-        avg_metric = inference(test_dataset, BATCH_SIZE, model)
+        avg_metric = inference(test_dataset, model)
+        print(avg_metric)
+
         if e % 10 == 0:
             torch.save(model.state_dict(), save_dir + args.task + '_' + args.model + '_' + str(e) + '_' + str(avg_metric) + '.pth')
         if mean_lost < loss_best:
@@ -57,19 +77,21 @@ if __name__ == "__main__":
     model = getattr(model, args.task)(getattr(model, args.model)).to(device)
     BATCH_SIZE = 8
     lr = 0.0001
-    EPOCH = 50
-    checkpoint = None
+    EPOCH = 20
 
     large_dataset = PublicDataset()
-    small_dataset = PairedDataset()
+    train_dataset, test_dataset = PairedDataset(train=True), PairedDataset(train=False)
+    print(len(train_dataset), len(test_dataset))
+    checkpoint = None
+    # checkpoint = '20231211-034927'
     if checkpoint is not None:
-        ckpt = torch.load('checkpoints/' + checkpoint)
+        ckpt = torch.load('checkpoints/' + checkpoint + '/best.pth')
         model.load_state_dict(ckpt, strict=True)
-    train_dataset, test_dataset = torch.utils.data.random_split(small_dataset, [int(len(small_dataset) * 0.8), 
-                                                                                len(small_dataset) - int(len(small_dataset) * 0.8)])
     if args.train:
         train([[large_dataset, train_dataset], test_dataset], EPOCH, lr, BATCH_SIZE, model)
     else:
-        inference(test_dataset, BATCH_SIZE, model)
+        arg_metric = inference(test_dataset, model)
+        print(arg_metric)
+    fine_grained_inference(model)
 
       

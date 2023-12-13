@@ -1,6 +1,6 @@
 import torch
 from tqdm import tqdm
-from .loss import sisnr
+from .loss import sisnr, snr, lsd, rmse, get_loss
 from .forward import Forward_Model
 import itertools
 class Forward_Reverse(torch.nn.Module):
@@ -12,7 +12,8 @@ class Forward_Reverse(torch.nn.Module):
         self.optimizer_2 = torch.optim.Adam(self.reverse_model.parameters(), lr=LR)
     def run_epoch_train(self, small_train, large_train, device):
         loss_forward = []
-        for sample in tqdm(small_train): # with reference
+        pbar = tqdm(small_train)
+        for sample in pbar: # with reference
             z = sample['audio'].to(device).unsqueeze(1); x = sample['reference'].to(device).unsqueeze(1)
             self.optimizer_1.zero_grad()
             est_z = self.forward_model(x)
@@ -20,11 +21,12 @@ class Forward_Reverse(torch.nn.Module):
             loss = sisnr(est_z, z) + sisnr(est_x, x)
             loss.backward() 
             self.optimizer_1.step()
+            pbar.set_description("loss:{:.4f}".format(loss.item()))
             loss_forward.append(loss.item())
 
-        loss_reverse = []
-        for sample in tqdm(large_train):
-            x = sample['reference'].to(device)
+        pbar = tqdm(large_train)
+        for sample in pbar:
+            x = sample['reference'].to(device).unsqueeze(1)
             self.optimizer_2.zero_grad()
             with torch.no_grad():
                 est_z = self.forward_model(x)
@@ -32,14 +34,16 @@ class Forward_Reverse(torch.nn.Module):
             loss = sisnr(est_x, x)   
             loss.backward() 
             self.optimizer_2.step()
-            loss_reverse.append(loss.item())
-        
-        return loss_forward, loss_reverse
+            pbar.set_description("loss:{:.4f}".format(loss.item()))
+        return loss_forward
     def run_epoch_test(self, test_loader, device):
         loss_list = []
         for sample in (test_loader):
             z = sample['audio'].to(device).unsqueeze(1); x = sample['reference'].to(device).unsqueeze(1)
-            est_reference = self.Reverse(z)
-            loss = - sisnr(est_reference.squeeze(1), x.squeeze(1))
-            loss_list.append(loss.item())
+            est_x = self.reverse_model(z)
+            est_x = est_x.squeeze(1)
+            x = x.squeeze(1)
+            metric = [-sisnr(est_x, x).item(), -snr(est_x, x).item(), 
+                      rmse(est_x, x).item(), lsd(est_x, x).item()]
+            loss_list.append(metric)
         return loss_list
