@@ -23,16 +23,11 @@ def MultiResolutionSTFTLoss(x, y):
         window = torch.hann_window(win).to(x.device)
         x_stft = torch.stft(x,  fft, hop, win, window, return_complex=True)
         x_mag = torch.sqrt(
-            torch.clamp((x_stft.real**2) + (x_stft.imag**2), min=1e-8)
-        )
-        x_phs = torch.angle(x_stft)
-
+            torch.clamp((x_stft.real**2) + (x_stft.imag**2), min=1e-8))
         y_stft = torch.stft(y,  fft, hop, win, window, return_complex=True)
         y_mag = torch.sqrt(
-            torch.clamp((y_stft.real**2) + (y_stft.imag**2), min=1e-8)
-        )
-        y_phs = torch.angle(y_stft)
-        loss += Spectral_Loss(x_mag, y_mag) + torch.nn.functional.mse_loss(x_phs, y_phs)
+            torch.clamp((y_stft.real**2) + (y_stft.imag**2), min=1e-8))
+        loss += Spectral_Loss(x_mag, y_mag)
     return loss
 def sisnr(x, s, eps=1e-8, vad=1):
     """
