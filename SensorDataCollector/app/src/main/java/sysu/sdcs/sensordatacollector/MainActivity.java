@@ -182,18 +182,6 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra(GlobalConstants.MEASUREMENT_PHASE_CHANGE, phase.name());
         sendBroadcast(intent);
     }
-//    private void initButton() {
-//        findViewById(R.id.btn_start_measurement).setOnTouchListener((v, event) -> {
-//            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-//                startMeasurement();
-//                Log.d("action_down", "11");
-//            } else if (event.getAction() == MotionEvent.ACTION_UP) {
-//                stopMeasurement();
-//                Log.d("action_up", "22");
-//            }
-//            return false;
-//        });
-//    }
         private View.OnClickListener btn_listener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -206,7 +194,6 @@ public class MainActivity extends AppCompatActivity {
                 // startMeasurement();
 
                 file_name = getCurrentTime();
-                Log.i("fname", file_name);
                 try {
                     Files.createDirectories(Paths.get(directory + edt_path.getText().toString() + "/"));
                 } catch (IOException e) {

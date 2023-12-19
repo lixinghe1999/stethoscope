@@ -2,6 +2,7 @@ import scipy
 import numpy as np
 import matplotlib.pyplot as plt
 import librosa
+import os
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -26,33 +27,17 @@ def plot_spectrogram(title, w, fs, ax, offset=0):
     ax.set_xlim([offset, offset+10])
     return chirp_freq, frequency_response, snr
 
-pixelxl, sr = librosa.load('data/chirp_pixelxl.wav', sr=None)
-pixel6, sr = librosa.load('data/chirp_pixel6.wav', sr=None)
-stethoscope1, sr = librosa.load('data/chirp_stethoscope.wav', sr=None)
-
-fig, ax = plt.subplots(5, 1, figsize=(3, 6))
+files = os.listdir('dataset')
+fname = 'chirp'
+playback, sr = librosa.load('dataset/' + fname + '.wav', sr=None)
+files_filter = [f for f in files if f.split('_')[0] == fname]
+fig, ax = plt.subplots(1+(files_filter), 1, figsize=(3, 6))
 plt.tight_layout()
-freq1, FR1, SNR1 = plot_spectrogram('Pixel XL', pixelxl, sr, ax[0], 0.4)
-freq3, FR3, SNR3 = plot_spectrogram('Pixel 6', pixel6, sr, ax[1], 0 )
+freq_playback, response_playback, snr_playback = plot_spectrogram('Playback', playback, sr, ax[0], 0)
 
-freq2, FR2, SNR2 = plot_spectrogram('stethoscope', stethoscope1, sr, ax[2], 0 )
-
-
-ax[3].plot(freq1, FR1, label='Pixel XL')
-ax[3].plot(freq3, FR3, label='Pixel 6')
-ax[3].plot(freq2, FR2, label='stethoscope')
-ax[3].set_ylim([-100, -20])
-ax[3].set_title('frequency response')
-ax[3].legend()
-
-
-ax[4].plot(freq1, SNR1, label='Pixel XL')
-ax[4].plot(freq3, SNR3, label='Pixel 6')
-ax[4].plot(freq2, SNR2, label='stethoscope')
-ax[4].set_ylim([0, 30])
-
-ax[4].set_title('SNR')
-ax[4].legend()
-
-plt.savefig('chirp.png', dpi=300)
+for i, f in enumerate(files_filter):
+    _, phone, textile = f.split('_')
+    record, sr = librosa.load('dataset/' + f, sr=None)[0]
+    freq, response, snr = plot_spectrogram('_'.join([phone, textile]), playback, sr, ax[i+1], 0)
+# plt.savefig('chirp.png', dpi=300)
 plt.show()
